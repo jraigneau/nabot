@@ -52,7 +52,8 @@ func initialisation() {
 //Répond à une demande d'aide du bot
 func replyHelp(channelID string) {
 	commands := map[string]string{
-		"aide": "Affiche la liste des commandes possibles"}
+		"aide":     "Affiche la liste des commandes possibles",
+		"identité": "Donne des informations sur @nabot"}
 	fields := make([]slack.AttachmentField, 0)
 	for k, v := range commands {
 		fields = append(fields, slack.AttachmentField{
@@ -63,12 +64,21 @@ func replyHelp(channelID string) {
 	sendMsg("Aide", "", "", fields, "", channelID)
 }
 
+//Répond à l'identité du bot
+func replyIdentity(channelID string) {
+	var title = "Bonjour, je m'appelle @nabot et je suis un bot pour contrôler la domotique de mes maîtres"
+	var pretext = "Vous trouverez plus d'information sur https://github.com/jraigneau/nabot"
+	sendMsg(title, pretext, "", nil, "", channelID)
+}
+
 func msgAnalysis(msg string, channelID string) {
 	switch msg {
 	case "<@" + botID + "> aide":
 		replyHelp(channelID)
+	case "<@" + botID + "> identité":
+		replyIdentity(channelID)
 	default:
-		sendMsg("Désolé je n'ai pas reconnu la commande", "", "Utiliser @nabot aide pour avoir plus d'information", nil, "#FF0000", channelID)
+		sendMsg("Désolé je n'ai pas reconnu la commande", "", "Utiliser `@nabot aide` pour avoir plus d'information", nil, "#FF0000", channelID)
 	}
 
 }
@@ -83,10 +93,11 @@ func sendMsg(title string, pretext string, text string, fields []slack.Attachmen
 	params := slack.PostMessageParameters{}
 	params.AsUser = true
 	attachment := slack.Attachment{
-		Pretext: pretext,
-		Color:   color,
-		Text:    text,
-		Fields:  fields,
+		Pretext:    pretext,
+		Color:      color,
+		Text:       text,
+		Fields:     fields,
+		MarkdownIn: []string{"text", "pretext", "fields"},
 	}
 	params.Attachments = []slack.Attachment{attachment}
 	_, _, err := api.PostMessage(channelID, title, params)
