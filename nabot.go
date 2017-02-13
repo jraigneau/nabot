@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 
 	"encoding/json"
 	"github.com/nlopes/slack"
@@ -48,25 +49,44 @@ func initialisation() {
 
 }
 
+//Répond à une demande d'aide du bot
+func replyHelp(channelID string) {
+	commands := map[string]string{
+		"aide": "Affiche la liste des commandes possibles"}
+	fields := make([]slack.AttachmentField, 0)
+	for k, v := range commands {
+		fields = append(fields, slack.AttachmentField{
+			Title: "@nabot " + k,
+			Value: v,
+		})
+	}
+	sendMsg("Aide", "", "", fields, "", channelID)
+}
+
+func msgAnalysis(msg string, channelID string) {
+	switch msg {
+	case "<@" + botID + "> aide":
+		replyHelp(channelID)
+	default:
+		sendMsg("Désolé je n'ai pas reconnu la commande", "", "Utiliser @nabot aide pour avoir plus d'information", nil, "#FF0000", channelID)
+	}
+
+}
+
 //Poste un message sur le channel channelID
-func sendMsg(title string, pretext string, text string, channelID string) {
+func sendMsg(title string, pretext string, text string, fields []slack.AttachmentField, colorMsg string, channelID string) {
+	var color = "#B733FF" // couleur par défaut
+	if colorMsg != "" {
+		color = colorMsg
+	}
+
 	params := slack.PostMessageParameters{}
+	params.AsUser = true
 	attachment := slack.Attachment{
 		Pretext: pretext,
+		Color:   color,
 		Text:    text,
-		// Uncomment the following part to send a field too
-		/*
-			Fields: []slack.AttachmentField{
-				slack.AttachmentField{
-					Title: "a",
-					Value: "no",
-				},
-				slack.AttachmentField{
-					Title: "b",
-					Value: "yes",
-				},
-			},
-		*/
+		Fields:  fields,
 	}
 	params.Attachments = []slack.Attachment{attachment}
 	_, _, err := api.PostMessage(channelID, title, params)
@@ -99,9 +119,12 @@ func main() {
 		case *slack.ConnectedEvent:
 			logger.Print("Infos:", ev.Info)
 			botID = ev.Info.User.ID
-			sendMsg("Heigh-ho, heigh-ho je vais au boulot", "", "", "G4056ALKB")
+			sendMsg("Heigh-ho, heigh-ho je vais au boulot", "", "", nil, "", "G4056ALKB")
 
 		case *slack.MessageEvent:
+			if ev.Type == "message" && strings.HasPrefix(ev.Text, "<@"+botID+">") {
+				msgAnalysis(ev.Text, ev.Channel)
+			}
 			logger.Printf("Message: %v\n", ev)
 
 		case *slack.PresenceChangeEvent:
