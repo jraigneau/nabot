@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	forecast "github.com/mlbright/forecast/v2"
 	"log"
 	"os"
 	"strings"
@@ -12,7 +14,8 @@ import (
 
 //structure pour récupérer le token
 type Token struct {
-	Token string `json:"token"`
+	SlackToken   string `json:"slacktoken"`
+	DarkSkyToken string `json:"darkskytoken"`
 }
 
 //variables
@@ -31,8 +34,9 @@ func initialisation() {
 
 	//Initialisation variable
 	var slackToken = os.Getenv("slackToken")
-	if slackToken == "" {
-		logger.Printf("INFO : le token pour slack n'existe pas dans les variables d'environnements => utilisation de token.json")
+	var darkskyToken = os.Getenv("darkskyToken")
+	if slackToken == "" || darkskyToken == "" {
+		logger.Printf("INFO : le token pour slack ou darksky n'existe pas dans les variables d'environnements => utilisation de token.json")
 		file, err := ioutil.ReadFile("./token.json")
 
 		if err != nil {
@@ -43,8 +47,9 @@ func initialisation() {
 			logger.Printf("ERROR : Impossible de parser token.json")
 		}
 	} else {
-		logger.Printf("INFO : Utilisation du token %s trouvé dans les variables d'environnement", slackToken)
-		botKey.Token = slackToken
+		logger.Printf("INFO : Utilisation des tokens %s et %s trouvé dans les variables d'environnement", slackToken, darkskyToken)
+		botKey.SlackToken = slackToken
+		botKey.DarkSkyToken = darkskyToken
 	}
 
 }
@@ -64,19 +69,63 @@ func replyHelp(channelID string) {
 	sendMsg("Aide", "", "", fields, "", channelID)
 }
 
+//Répond à la météo
+func replyWeather(channelID string) {
+
+	key := botKey.DarkSkyToken
+
+	// Igny
+	lat := "48.7352"
+	long := "2.2176"
+
+	icons := map[string]string{
+		"clear-day":           ":sunny:",
+		"clear-night":         ":crescent_moon:",
+		"rain":                ":rain_cloud:",
+		"snow":                ":snowflake:",
+		"sleet":               ":snow_cloud:",
+		"wind":                ":wind_blowing_face:",
+		"fog":                 ":fog:",
+		"cloudy":              ":cloud:",
+		"partly-cloudy-day":   ":barely_sunny:",
+		"partly-cloudy-night": ":barely_sunny:",
+		"hail":                ":snow_cloud:",
+		"thunderstorm":        ":thunder_cloud_and_rain:",
+		"tornado":             ":tornado:",
+	}
+
+	f, err := forecast.Get(key, lat, long, "now", forecast.CA, forecast.French)
+	if err != nil {
+		logger.Printf("Error:%s", err)
+	}
+
+	title := "Météo à Igny"
+	pretext := fmt.Sprintf("%s", f.Daily.Summary)
+	text := fmt.Sprintf("*Actuellement* %s: %s et il fait *%.1f°C*, avec une humidité de *%.0f%%* et un vent à *%.2fm/s*", icons[f.Currently.Icon], f.Currently.Summary, f.Currently.Temperature, f.Currently.Humidity*100, f.Currently.WindSpeed)
+
+	sendMsg(title, pretext, text, nil, "", channelID)
+}
+
 //Répond à l'identité du bot
 func replyIdentity(channelID string) {
-	var title = "Bonjour, je m'appelle @nabot et je suis un bot pour contrôler la domotique de mes maîtres"
-	var pretext = "Vous trouverez plus d'information sur https://github.com/jraigneau/nabot"
+	title := "Bonjour, je m'appelle @nabot et je suis un bot pour contrôler la domotique de mes maîtres"
+	pretext := "Vous trouverez plus d'information sur https://github.com/jraigneau/nabot"
 	sendMsg(title, pretext, "", nil, "", channelID)
 }
 
+//Analyse des messages
+//TODO:
+// 1. faire un substring du nom du bot
+// 2. Faire une analyse "fuzzy"
+// 3. prévoir de pouvoir envoyer ce qu'il y a après le mot clef : exemple pour météo
 func msgAnalysis(msg string, channelID string) {
 	switch msg {
 	case "<@" + botID + "> aide":
 		replyHelp(channelID)
 	case "<@" + botID + "> identité":
 		replyIdentity(channelID)
+	case "<@" + botID + "> météo":
+		replyWeather(channelID)
 	default:
 		sendMsg("Désolé je n'ai pas reconnu la commande", "", "Utiliser `@nabot aide` pour avoir plus d'information", nil, "#FF0000", channelID)
 	}
@@ -113,7 +162,7 @@ func main() {
 
 	initialisation()
 
-	api = slack.New(botKey.Token)
+	api = slack.New(botKey.SlackToken)
 
 	slack.SetLogger(logger)
 	api.SetDebug(false)
