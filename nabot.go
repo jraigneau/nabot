@@ -58,7 +58,9 @@ func initialisation() {
 func replyHelp(channelID string) {
 	commands := map[string]string{
 		"aide":     "Affiche la liste des commandes possibles",
-		"identité": "Donne des informations sur @nabot"}
+		"identité": "Donne des informations sur @nabot",
+		"météo":    "Affiche la météo à Igny",
+	}
 	fields := make([]slack.AttachmentField, 0)
 	for k, v := range commands {
 		fields = append(fields, slack.AttachmentField{
@@ -66,7 +68,7 @@ func replyHelp(channelID string) {
 			Value: v,
 		})
 	}
-	sendMsg("Aide", "", "", fields, "", channelID)
+	sendMsg("", "", "", fields, "", channelID)
 }
 
 //Répond à la météo
@@ -99,10 +101,14 @@ func replyWeather(channelID string) {
 		logger.Printf("Error:%s", err)
 	}
 
-	title := "Météo à Igny"
-	pretext := fmt.Sprintf("%s", f.Daily.Summary)
-	text := fmt.Sprintf("*Actuellement* %s: %s et il fait *%.1f°C*, avec une humidité de *%.0f%%* et un vent à *%.2fm/s*", icons[f.Currently.Icon], f.Currently.Summary, f.Currently.Temperature, f.Currently.Humidity*100, f.Currently.WindSpeed)
-
+	//récupération du courant, d'aujourd'hui et des 2 prochains jours
+	title := ""
+	pretext := ""
+	text := fmt.Sprintf("*Cette semaine* à Igny:%s\n\n", f.Daily.Summary)
+	text += fmt.Sprintf("*Actuellement* %s: %s et il fait *%.1f°C*, avec un risque de pluie *%.0f%%* de et un vent à *%.2fm/s*\n\n", icons[f.Currently.Icon], f.Currently.Summary, f.Currently.Temperature, f.Currently.PrecipProbability*100, f.Currently.WindSpeed)
+	text += fmt.Sprintf("*Aujourd'hui* %s: %s et il fera entre *%.1f°C* et *%.1f°C*, avec un risque de pluie de *%.0f%%* et un vent à *%.2fm/s*\n\n", icons[f.Daily.Data[0].Icon], f.Daily.Data[0].Summary, f.Daily.Data[0].TemperatureMin, f.Daily.Data[0].TemperatureMax, f.Daily.Data[0].PrecipProbability*100, f.Daily.Data[0].WindSpeed)
+	text += fmt.Sprintf("*Demain* %s: %s et il fera entre *%.1f°C* et *%.1f°C*, avec un risque de pluie de *%.0f%%* et un vent à *%.2fm/s*\n\n", icons[f.Daily.Data[1].Icon], f.Daily.Data[1].Summary, f.Daily.Data[1].TemperatureMin, f.Daily.Data[1].TemperatureMax, f.Daily.Data[1].PrecipProbability*100, f.Daily.Data[1].WindSpeed)
+	text += fmt.Sprintf("*Et après-demain* %s: %s et il fera entre *%.1f°C* et *%.1f°C*, avec un risque de pluie de *%.0f%%* et un vent à *%.2fm/s*", icons[f.Daily.Data[2].Icon], f.Daily.Data[2].Summary, f.Daily.Data[2].TemperatureMin, f.Daily.Data[2].TemperatureMax, f.Daily.Data[2].PrecipProbability*100, f.Daily.Data[2].WindSpeed)
 	sendMsg(title, pretext, text, nil, "", channelID)
 }
 
@@ -127,12 +133,13 @@ func msgAnalysis(msg string, channelID string) {
 	case "<@" + botID + "> météo":
 		replyWeather(channelID)
 	default:
-		sendMsg("Désolé je n'ai pas reconnu la commande", "", "Utiliser `@nabot aide` pour avoir plus d'information", nil, "#FF0000", channelID)
+		sendMsg("", "", "Désolé je n'ai pas reconnu la commande\nUtiliser `@nabot aide` pour avoir plus d'information", nil, "#FF0000", channelID)
 	}
 
 }
 
 //Poste un message sur le channel channelID
+//TODO: revoir gestion des champs (sur mobile apparition d'un champ "vide")
 func sendMsg(title string, pretext string, text string, fields []slack.AttachmentField, colorMsg string, channelID string) {
 	var color = "#B733FF" // couleur par défaut
 	if colorMsg != "" {
