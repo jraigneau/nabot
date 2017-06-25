@@ -202,16 +202,17 @@ func replyHelp(channelID string) {
 //Renvoie le traffic routier
 func replyTraffic(channelID string) {
 
-	q := fmt.Sprintf("SELECT trafficDelayInSeconds,travelTimeInSeconds FROM traffic where \"name\"='julien' ORDER BY time DESC LIMIT 1")
+	q := fmt.Sprintf("SELECT trafficDelayInSeconds,travelTimeInSeconds FROM traffic where \"name\"='laurence' ORDER BY time DESC LIMIT 1")
 	res, err := queryDB(q, "trafficy")
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
 
+	//Attention le nom n'est plus cohérent...
 	trafficDelayInSecondsJR := res[0].Series[0].Values[0][1].(json.Number).String()
 	travelTimeInSecondsJR := res[0].Series[0].Values[0][2].(json.Number).String()
 
-	q1 := fmt.Sprintf("SELECT trafficDelayInSeconds,travelTimeInSeconds FROM traffic where \"name\"='laurence' ORDER BY time DESC LIMIT 1")
+	q1 := fmt.Sprintf("SELECT trafficDelayInSeconds,travelTimeInSeconds FROM traffic where \"name\"='laurence-soir' ORDER BY time DESC LIMIT 1")
 	res1, err := queryDB(q1, "trafficy")
 	if err != nil {
 		log.Fatal("Error: ", err)
@@ -222,7 +223,7 @@ func replyTraffic(channelID string) {
 
 	title := ""
 	pretext := ""
-	text := fmt.Sprintf("Actuellement il faut *%vmin* pour aller au PMU (*%vmin* de bouchon) et *%vmin* pour aller chez Aviva (*%vmin* de bouchon).", travelTimeInSecondsJR, trafficDelayInSecondsJR, travelTimeInSecondsLR, trafficDelayInSecondsLR)
+	text := fmt.Sprintf("Actuellement il faut *%vmin* pour aller à Aviva (*%vmin* de bouchon) et *%vmin* pour en revenir (*%vmin* de bouchon).", travelTimeInSecondsJR, trafficDelayInSecondsJR, travelTimeInSecondsLR, trafficDelayInSecondsLR)
 	sendMsg(title, pretext, text, nil, "", channelID)
 }
 
