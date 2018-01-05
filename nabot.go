@@ -383,7 +383,7 @@ func main() {
 	slack.SetLogger(logger)
 	api.SetDebug(false)
 
-	go ordonnanceur()
+	//go ordonnanceur()
 
 	rtm := api.NewRTM()
 	go rtm.ManageConnection()
