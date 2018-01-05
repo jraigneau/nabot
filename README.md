@@ -29,6 +29,7 @@ cf fonction `initialisation()`
 
 
 ####Fun facts
+
     On pioche tic tac, tic tac,
     Dans la mine, le jour entier.
     Piocher tic tac, tic tac,
