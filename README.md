@@ -9,18 +9,18 @@
 *bot* pour [slack](http://www.slack.com), orienté domotique personnelle - remplace [Goule](https://github.com/jraigneau/goule).
 
 
-####Usage
+#### Usage
 
 `nabot`
 
 
-####Config
+#### Config
 
 Possibilité de passer par des variables d'environnement `$slackToken` et `$darkskyToken`  ou d'utiliser le fichier ̀`token.json` pour donner les tokens nécessaires au bot.
 cf fonction `initialisation()`
 
 
-####Références
+#### Références
 
 <https://api.slack.com/bot-users>
 <https://github.com/nlopes/slack>
